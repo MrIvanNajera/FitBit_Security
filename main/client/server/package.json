@@ -1,0 +1,20 @@
+{
+  "name": "fitbit-security",
+  "version": "1.0.0",
+  "description": "A 2FA implementation for Fitbit security using OTP.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.0",
+    "express": "^4.18.2",
+    "nodemailer": "^6.9.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  },
+  "author": "Group 3 (Marco Pena, Jorge Salas, Ivan Najera)",
+  "license": "FIU CIS5370 RVC 1251"
+}

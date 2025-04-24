@@ -1,47 +1,103 @@
 const crypto = require("crypto");
-const nodemailer = require("nodemailer");
 
-const otpStore = new Map(); // Replace with Redis or DB in production
+const otpStore = new Map(); // Temporary in-memory store for OTPs
 
+// Helper function to generate a 6-digit OTP
 function generateOTP() {
   return crypto.randomInt(100000, 999999).toString();
 }
 
+// Function to generate and send OTP
 async function sendOTP(email) {
   const otp = generateOTP();
-  const expiry = Date.now() + 5 * 60 * 1000; // 5 minutes from now
+  otpStore.set(email, { otp, expiresAt: Date.now() + 5 * 60 * 1000 }); // OTP expires in 5 minutes
 
-  otpStore.set(email, { otp, expiry });
-
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.EMAIL,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
-
-  await transporter.sendMail({
-    from: `"Fitbit Security" <${process.env.EMAIL}>`,
-    to: email,
-    subject: "Your OTP Code",
-    text: `Your Fitbit verification code is ${otp}. It will expire in 5 minutes.`,
-  });
+  // Simulate sending OTP via email (replace with real email service)
+  console.log(`OTP for ${email}: ${otp}`);
 }
 
-async function verifyOTP(email, inputOtp) {
+// Function to verify OTP
+async function verifyOTP(email, otp) {
   const record = otpStore.get(email);
-  if (!record) return false;
 
-  const { otp, expiry } = record;
-  if (Date.now() > expiry) {
-    otpStore.delete(email);
+  if (!record) return false; // No OTP found for the email
+
+  const { otp: storedOtp, expiresAt } = record;
+
+  if (Date.now() > expiresAt) {
+    otpStore.delete(email); // Remove expired OTP
     return false;
   }
 
-  const isValid = otp === inputOtp;
-  if (isValid) otpStore.delete(email);
-  return isValid;
+  if (storedOtp === otp) {
+    otpStore.delete(email); // OTP is valid, remove it
+    return true;
+  }
+
+  return false;
+}
+
+// Function to handle login
+function login() {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  if (!email || !password) {
+    alert("Please enter both email and password.");
+    return;
+  }
+
+  // Simulate sending login request to the server
+  fetch("/api/login", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email, password }),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.success) {
+        alert("Login successful. Please enter the OTP sent to your email.");
+      } else {
+        alert("Login failed: " + data.message);
+      }
+    })
+    .catch((error) => {
+      console.error("Error during login:", error);
+      alert("An error occurred during login.");
+    });
+}
+
+// Function to handle OTP verification
+function verify() {
+  const otp = document.getElementById("otp").value;
+
+  if (!otp) {
+    alert("Please enter the OTP.");
+    return;
+  }
+
+  // Simulate sending OTP verification request to the server
+  fetch("/api/verify-otp", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ otp }),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.success) {
+        alert("OTP verified successfully. You are now logged in.");
+      } else {
+        alert("OTP verification failed: " + data.message);
+      }
+    })
+    .catch((error) => {
+      console.error("Error during OTP verification:", error);
+      alert("An error occurred during OTP verification.");
+    });
 }
 
 module.exports = { sendOTP, verifyOTP };
